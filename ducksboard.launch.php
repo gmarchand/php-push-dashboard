@@ -1,6 +1,7 @@
 <?php 
 include 'zendesk.class.php';
 include 'ducksboard.class.php';
+include_once 'facebookApp.class.php';
 
 require_once 'lib/google-api-php-client/src/Google_Client.php';
 require_once 'lib/google-api-php-client/src/contrib/Google_CalendarService.php';
@@ -22,6 +23,7 @@ class dashboard{
 		foreach ($arr as $value) {
 	
 			if (strstr($value, 'push')) {
+				echo "Function : ".$value."\n";
 				$this -> $value();
 			}
 		}
@@ -43,10 +45,9 @@ class dashboard{
 		}
 
 		$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
-		$ducksboard->call($this->settings['DUCK_WDG_COUNT_INCIDENT'],array('value'=>$countIncident));
-		$ducksboard->call($this->settings['DUCK_WDG_COUNT_PB'],array('value'=>$countProblem));
-		$ducksboard->call($this->settings['DUCK_WDG_COUNT_OTHER'],array('value'=>$countOther));
-
+		$ducksboard->call($this->settings['DUCK_WDG_ZENDESK_COUNT_INCIDENT'],array('value'=>$countIncident));
+		$ducksboard->call($this->settings['DUCK_WDG_ZENDESK_COUNT_PB'],array('value'=>$countProblem));
+		$ducksboard->call($this->settings['DUCK_WDG_ZENDESK_COUNT_OTHER'],array('value'=>$countOther));
 	}
 
 
@@ -60,11 +61,69 @@ class dashboard{
 		$ducksboard->call($this->settings['DUCK_WDG_ZENDESK_VIEW_NON_ASSIGNE'],array('value'=>$res->count));
 	}
 
+	
+	// @TODO
+	function pushWidgetFbCreateObject() {
+		$fbapp = new facebookapp();
+		$fbapp->initCplusApp();
+		$res = $fbapp->getApiObjectCreateByHour();
+		$arr_res = $res['data'][0]['values'];
+		
+		foreach($arr_res as $day){
+			// Boucle sur chaque date
+			$date = $day['end_time'];
+			$timestamp = strtotime($date);
+			//print_r($day);
+			$videoObj = 0;
+			$profileObj = 0;
+			$articleObj = 0;
+			$websiteObj = 0;
+			$other = 0;
+			foreach($day['value'] as $value) {
+				if (!strncmp($value['object_type_name'], 'video', strlen('video'))){
+					$videoObj += $value['value'];
+				} else if ($value['object_type_name'] == 'profile'){
+					$profileObj += $value['value'];
+				} else if ($value['object_type_name'] == 'article'){
+					$articleObj += $value['value'];
+				} else if ($value['object_type_name'] == 'website'){
+					$websiteObj += $value['value'];
+				} else {
+					$other += $value['value'];
+				}
+			}
+			$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
+			$ducksboard->call($this->settings['DUCK_WDG_FBCR_VIDEO'],array('value'=>$videoObj,'timestamp' =>$timestamp));
+			$ducksboard->call($this->settings['DUCK_WDG_FBCR_PROFILE'],array('value'=>$profileObj,'timestamp' =>$timestamp));
+			$ducksboard->call($this->settings['DUCK_WDG_FBCR_ARTICLE'],array('value'=>$articleObj,'timestamp' =>$timestamp));
+			$ducksboard->call($this->settings['DUCK_WDG_FBCR_WEBSITE'],array('value'=>$websiteObj,'timestamp' =>$timestamp));
+			
+			
+		}
+		
+	}
+	
+	function pushWidgetFbApiError() {
+		$fbapp = new facebookapp();
+		$fbapp->initCplusApp();
+		$res = $fbapp->getApiErrorsByHour();
+		$arr_res = $res['data'][0]['values'];
+		
+		foreach($arr_res as $day){
+			// Boucle sur chaque date
+			$date = $day['end_time'];
+			$timestamp = strtotime($date);
+			$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
+			$ducksboard->call($this->settings['DUCK_WDG_FBAPI_ERROR'],array('value'=> $day['value'],'timestamp' =>$timestamp));
+			
+		}
+		
+		$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
+		
+	}
 
 	function pushWidgetResponsable(){
 
-		// Load the key in PKCS 12 format (you need to download this from the
-		// Google API Console when the service account was created.
 		$client = new Google_Client();
 
 		$key = file_get_contents($this->settings['GOOGLE_KEY_FILE']);
