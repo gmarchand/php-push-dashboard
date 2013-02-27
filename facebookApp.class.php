@@ -23,16 +23,21 @@ class facebookapp {
 	function getApiObjectCreateByHour (){
 		$since = strtotime("8 days ago");
 		$until = strtotime("tomorrow");
-		$api = "/insights/application_opengraph_object_create?since=".$since."&until=".$until;
-		$result = $this->fb->api('/'.$this->settings['FB_CPLUS_APPID'].$api);
+		$api = '/'.$this->settings['FB_CPLUS_APPID']."/insights/application_opengraph_object_create?since=".$since."&until=".$until;
+		$result = $this->fb->api($api);
+		echo "Show Request : ".$api."\n";
+		print_r($result);
 		return $result;
 	}
 	
 	function getApiErrorsByHour (){
 		$since = strtotime("8 days ago");
 		$until = strtotime("tomorrow");
-		$api = "/insights/application_api_errors?since=".$since."&until=".$until;
-		$result = $this->fb->api('/'.$this->settings['FB_CPLUS_APPID'].$api);
+		$api = '/'.$this->settings['FB_CPLUS_APPID']."/insights/application_api_errors?since=".$since."&until=".$until;
+		echo "Show Request : ".$api."\n";
+		$result = $this->fb->api($api);
+		echo "Show Request : ".$api."\n";
+		print_r($result);
 		return $result;
 	}
 }
