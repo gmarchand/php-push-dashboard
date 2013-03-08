@@ -2,3 +2,7 @@
 [submodule "vendors/facebook-php-sdk"]
 	path = vendors/facebook-php-sdk
 	url = git://github.com/facebook/facebook-php-sdk.git
+
+[submodule "vendors/analog"]
+	path = vendors/analog
+	url = https://github.com/jbroadway/analog
