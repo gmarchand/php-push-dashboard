@@ -20,10 +20,8 @@ class ducksboard {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-		echo "DucksBoard Widget (".$this->widget.") - Request : ".$this->postfield." - Result : ";
-		echo curl_exec ($ch);
-		echo "\n";
-
+		$res =  curl_exec ($ch);
+		Analog::notice("DucksBoard Widget (".$this->widget.") - Request : ".$this->postfield." - Result : ".$res);
 		curl_close ($ch);
 
 	}

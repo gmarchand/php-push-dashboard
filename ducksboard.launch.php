@@ -6,7 +6,20 @@ include_once 'facebookApp.class.php';
 require_once 'lib/google-api-php-client/src/Google_Client.php';
 require_once 'lib/google-api-php-client/src/contrib/Google_CalendarService.php';
 
+// Determine the environment
 
+if ($env = getenv('APP_ENV')) {
+	if (!defined('APP_ENV')) define('APP_ENV', $env);
+} else {
+	if (!defined('APP_ENV')) define('APP_ENV', 'local');
+}
+
+// Log Manager
+if(APP_ENV == 'local'){
+	Analog::handler (Analog\Handler\Threshold::init (Analog\Handler\stdout::init (),Analog::DEBUG));
+} else {
+	Analog::handler (Analog\Handler\Threshold::init (Analog\Handler\stdout::init (),Analog::NOTICE));
+}
 
 class dashboard{
 	private $settings;
@@ -18,12 +31,12 @@ class dashboard{
 	}
 
 	public function launchAll() {
-	
+
 		$arr = get_class_methods($this);
 		foreach ($arr as $value) {
-	
+
 			if (strstr($value, 'push')) {
-				echo "Function : ".$value."\n";
+				Analog::notice("Function : ".$value);
 				$this -> $value();
 			}
 		}
@@ -61,14 +74,13 @@ class dashboard{
 		$ducksboard->call($this->settings['DUCK_WDG_ZENDESK_VIEW_NON_ASSIGNE'],array('value'=>$res->count));
 	}
 
-	
-	// @TODO
+
 	function pushWidgetFbCreateObject() {
 		$fbapp = new facebookapp();
 		$fbapp->initCplusApp();
 		$res = $fbapp->getApiObjectCreateByHour();
 		$arr_res = $res['data'][0]['values'];
-		
+
 		foreach($arr_res as $day){
 			// Boucle sur chaque date
 			$date = $day['end_time'];
@@ -97,29 +109,29 @@ class dashboard{
 			$ducksboard->call($this->settings['DUCK_WDG_FBCR_PROFILE'],array('value'=>$profileObj,'timestamp' =>$timestamp));
 			$ducksboard->call($this->settings['DUCK_WDG_FBCR_ARTICLE'],array('value'=>$articleObj,'timestamp' =>$timestamp));
 			$ducksboard->call($this->settings['DUCK_WDG_FBCR_WEBSITE'],array('value'=>$websiteObj,'timestamp' =>$timestamp));
-			
-			
+				
+				
 		}
-		
+
 	}
-	
+
 	function pushWidgetFbApiError() {
 		$fbapp = new facebookapp();
 		$fbapp->initCplusApp();
 		$res = $fbapp->getApiErrorsByHour();
 		$arr_res = $res['data'][0]['values'];
-		
+
 		foreach($arr_res as $day){
 			// Boucle sur chaque date
 			$date = $day['end_time'];
 			$timestamp = strtotime($date);
 			$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
 			$ducksboard->call($this->settings['DUCK_WDG_FBAPI_ERROR'],array('value'=> $day['value'],'timestamp' =>$timestamp));
-			
+				
 		}
-		
+
 		$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
-		
+
 	}
 
 	function pushWidgetResponsable(){
@@ -136,25 +148,33 @@ class dashboard{
 
 		$cal = new Google_CalendarService($client);
 		$today = new DateTime('today');
-		$today->setTime(0, 0);
+		$today->setTime(0, 5);
 		$tomorrow = new DateTime('today');
 		$tomorrow->setTime(23, 59);
-		$events = $cal->events->listEvents($this->settings['GOOGLE_CAL_CALID'],array('singleEvents'=> true,'orderBy' => 'startTime', 'fields' => 'items(end,start,summary),summary'
-				,'timeMax'=>$tomorrow->format(DATE_RFC3339),'timeMin' =>$today->format(DATE_RFC3339)
-		)
-		);
-
-		//var_dump($events);
-		if(is_array($events['items'])) {
-			$event = $events['items'][0];
-			echo $resp_affectation = $event['summary'];
-
-			$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
-			$ducksboard->call($this->settings['DUCK_WDG_RESPONSABLE_ZENDESK'],array('value'=>array("content"=>"Responsable Affectation : ".$resp_affectation)));
-
+		$params = array('singleEvents'=> true,'orderBy' => 'startTime'
+				, 'fields' => 'items(end,start,summary),summary'
+				,'timeMax'=>$tomorrow->format(DATE_RFC3339)
+				,'timeMin' =>$today->format(DATE_RFC3339));
+		
+		$events = $cal->events->listEvents($this->settings['GOOGLE_CAL_CALID'],$params);
+		
+		foreach($events['items'] as $event){
+			$date = strtotime($event['start']['date']);
+			$today = new DateTime('today');
+			$today->setTime(0, 0);
+			if($today->getTimestamp() == $date){
+				$resp_affectation = $event['summary'];
+				break;
+			}
 		}
+			
+					
+		$ducksboard = new ducksboard($this->settings['DUCK_APIKEY']);
+		$ducksboard->call($this->settings['DUCK_WDG_RESPONSABLE_ZENDESK'],array('value'=>array("content"=>"Responsable Affectation : ".$resp_affectation)));
+
 	}
 }
+
 
 $dashboard = new dashboard();
 $dashboard->launchAll();

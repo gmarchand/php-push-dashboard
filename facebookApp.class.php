@@ -1,5 +1,7 @@
 <?php
 require_once 'vendors/facebook-php-sdk/src/facebook.php';
+require_once 'vendors/analog/lib/Analog.php';
+require_once 'lib/analogHandlerEcho.php';
 
 class facebookapp {
 	
@@ -8,6 +10,8 @@ class facebookapp {
 	
 	function __construct() {
 		$this->settings = parse_ini_file('config.ini', false);
+		
+
 	
 	}
 	
@@ -25,8 +29,9 @@ class facebookapp {
 		$until = strtotime("tomorrow");
 		$api = '/'.$this->settings['FB_CPLUS_APPID']."/insights/application_opengraph_object_create?since=".$since."&until=".$until;
 		$result = $this->fb->api($api);
-		echo "Show Request : ".$api."\n";
-		print_r($result);
+		Analog::debug('Request : '. $api);
+		//Analog::debug('Result: ');
+		//Analog::debug($result);
 		return $result;
 	}
 	
@@ -34,10 +39,11 @@ class facebookapp {
 		$since = strtotime("8 days ago");
 		$until = strtotime("tomorrow");
 		$api = '/'.$this->settings['FB_CPLUS_APPID']."/insights/application_api_errors?since=".$since."&until=".$until;
-		echo "Show Request : ".$api."\n";
 		$result = $this->fb->api($api);
-		echo "Show Request : ".$api."\n";
-		print_r($result);
+		Analog::debug('Request : '. $api);
+		//Analog::debug('Result: ');
+		//Analog::debug($result);
 		return $result;
 	}
 }
+
